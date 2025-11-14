@@ -25,12 +25,23 @@ jobs:
                 distribution: 'temurin'
 
             - name: Setup Maven Dependency Cache
-              uses: actions/cache@v4
+              uses: actions/cache@v4 # persistenter datei cache
               with:
                 path: ~/.m2/repository
-                key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+                key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }} # pom wird gehasht um den cache zu invalidieren, sobald sich abhängikeit ändert
                 restore-keys: |
                     ${{ runner.os }}-maven-
 
             - name: Build with Maven
               run: mvn clean install
+
+            # ======================================================
+
+            - name: Generate CycloneDX SBOM
+              run: mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom # outputs to target/bom.json and/or bom.xml
+
+            - name: Upload SBOM as Artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: sbom-cyclonedx.json
+                path: target/bom.json
